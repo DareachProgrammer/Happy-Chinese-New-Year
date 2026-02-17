@@ -800,8 +800,9 @@ function handleSend(ev){
     [innerWidth*0.85,innerHeight*0.25,0.9],
   ];
   pts.forEach(([x,y,s],i)=>setTimeout(()=>burst(x,y,s),i*90));
-  // Open QR modal after burst starts
+  // Show modal with QR + trigger deep link
   setTimeout(()=>openModal(),300);
+  setTimeout(()=>openABA(),600);
 }
 
 function openModal(){
@@ -827,20 +828,24 @@ function openABA(){
   const isAndroid = /Android/i.test(navigator.userAgent);
   const isIOS     = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-  // KHQR data decoded from your QR code
+  // KHQR data — per ABA's own API docs, goes directly after ? with NO key name
+  // Format: abamobilebank://ababank.com?<encoded_khqr>
   const khqr = "00020101021129450016abaakhppxxx%40abaa01090047941810208ABA%20Bank40600006abaP2P0112B6493886392D020900479418103090047941770404Dual5204000053031165802KH5911DAREACH%20RIN6010Phnom%20Penh6304F21F";
 
+  const deepLink = `abamobilebank://ababank.com?${khqr}`;
+
   if(isAndroid){
-    // Android: correct scheme = abamobilebank, package = com.paygo24.ibank
-    window.location.href = `intent://ababank.com?qr=${khqr}#Intent;scheme=abamobilebank;package=com.paygo24.ibank;S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dcom.paygo24.ibank;end`;
+    // Android Intent — opens ABA app directly to payment screen with KHQR pre-loaded
+    window.location.href = `intent://ababank.com?${khqr}#Intent;scheme=abamobilebank;package=com.paygo24.ibank;S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dcom.paygo24.ibank;end`;
   } else if(isIOS){
-    // iOS: correct scheme = abamobilebank://
-    window.location.href = `abamobilebank://ababank.com?qr=${khqr}`;
-    // Fallback to App Store after 2.5s if app not installed
+    // iOS — fires deep link into ABA app payment screen
+    window.location.href = deepLink;
+    // App Store fallback after 2.5s if not installed
     setTimeout(()=>{
       window.location.href = 'https://apps.apple.com/us/app/aba-mobile-bank/id968860649';
     }, 2500);
   } else {
+    // Desktop fallback
     window.open('https://ababank.com','_blank');
   }
 }

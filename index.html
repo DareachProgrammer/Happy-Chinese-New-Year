@@ -677,8 +677,8 @@ body::before {
       <div class="modal-app-btn-inner">
         <div class="modal-btn-icon">📱</div>
         <div class="modal-btn-text-col">
-          <div class="modal-btn-main">Open ABA Bank App</div>
-          <div class="modal-btn-sub">Tap to launch · then scan above</div>
+          <div class="modal-btn-main">Pay with ABA Now</div>
+          <div class="modal-btn-sub">Opens app · goes straight to payment</div>
         </div>
         <div class="modal-btn-icon">🚀</div>
       </div>
@@ -822,18 +822,28 @@ function closeModal(){
 }
 
 function openABA(){
-  // Try deep link to ABA app first, fall back to website
-  const deepLink='ababank://';
-  const webURL='https://ababank.com';
-  const iframe=document.createElement('iframe');
-  iframe.style.display='none';
-  iframe.src=deepLink;
-  document.body.appendChild(iframe);
-  setTimeout(()=>{
-    document.body.removeChild(iframe);
-    window.open(webURL,'_blank');
-  },1500);
   burst(innerWidth/2, innerHeight/2, 1);
+
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  const isIOS     = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  // Full KHQR data string decoded from your QR code
+  const khqr = "00020101021129450016abaakhppxxx%40abaa01090047941810208ABA%20Bank40600006abaP2P0112B6493886392D020900479418103090047941770404Dual5204000053031165802KH5911DAREACH%20RIN6010Phnom%20Penh6304F21F";
+
+  if(isAndroid){
+    // Android: Intent URL opens ABA app directly to payment screen with your QR
+    window.location.href = `intent://qr?data=${khqr}#Intent;scheme=ababank;package=com.ababank.mobilebanking;S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dcom.ababank.mobilebanking;end`;
+  } else if(isIOS){
+    // iOS: deep link opens ABA app to payment screen with your QR
+    window.location.href = `ababank://qr?data=${khqr}`;
+    // Fallback to App Store after 2s if app not installed
+    setTimeout(()=>{
+      window.location.href = 'https://apps.apple.com/kh/app/aba-mobile/id1456453100';
+    }, 2000);
+  } else {
+    // Desktop: just open website
+    window.open('https://ababank.com','_blank');
+  }
 }
 
 // Close modal on overlay click
